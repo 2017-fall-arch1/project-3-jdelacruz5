@@ -33,6 +33,12 @@ Layer fieldLayer = {		//playing field as a layer
   COLOR_WHITE,
   0
 };
+
+/*Layer score = {
+  drawString5x7(50,10, "switches:", COLOR_GREEN, COLOR_BLUE);
+  &fieldLayer
+};*/
+
 Layer layer2 = {
   (AbShape *)&rect11,
   {(screenWidth/10)-10, (screenHeight/2)}, /**< bit below & right of center */
@@ -163,9 +169,9 @@ void main()
   layerInit(&layer0);
   layerDraw(&layer0);
 
-
+  
   layerGetBounds(&fieldLayer, &fieldFence);
-
+  drawString5x7(50,5, "0 | 0", COLOR_BLACK, COLOR_WHITE);
 
   enableWDTInterrupts();      /**< enable periodic interrupt */
   or_sr(0x8);	              /**< GIE (enable interrupts) */
@@ -176,6 +182,9 @@ void main()
       P1OUT &= ~GREEN_LED;    /**< Green led off witHo CPU */
       or_sr(0x10);	      /**< CPU OFF */
     }
+    
+    drawString5x7(50,5, "0 | 0", COLOR_BLACK, COLOR_WHITE);
+
     P1OUT |= GREEN_LED;       /**< Green led on when CPU on */
     redrawScreen = 0;
     movLayerDraw(&ml0, &layer0);
