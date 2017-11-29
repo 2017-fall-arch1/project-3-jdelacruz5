@@ -74,7 +74,7 @@ typedef struct MovLayer_s {
 
 /* initial value of {0,0} will be overwritten */
 //MovLayer ml1 = { &layer1, {1,2}, 0};//&m13; 
-MovLayer ml0 = { &layer0, {3,3}, 0 };
+MovLayer ml0 = { &layer0, {2,2}, 0 };
 //MovLayer ml3 = { &layer3, {1,1}, 0 }; /**< not all layers move */
 
 
@@ -131,11 +131,15 @@ void mlAdvance(MovLayer *ml, Region *fence)
 	Vec2 newPos;
 	u_char axis;
 	Region shapeBoundary;
+    //Region orangeRecBound;
+    Region blueRecBound;
     
 	for (; ml; ml = ml->next) {
 		
 		vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
 		abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
+        abShapeGetBounds(ml->layer->next->abShape, &newPos, &blueRecBound); // blue rec
+        //abShapeGetBounds(ml->layer->next->next->abShape, 0, &orangeRecBound); // orange rec
 
 		for (axis = 0; axis < 2; axis ++) {
 			/*   if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
@@ -148,17 +152,23 @@ void mlAdvance(MovLayer *ml, Region *fence)
 				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
 				lscore += 1;
-				score[0] = '0' + lscore;
+				
 			} /**< for axis */
 
 			if (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) {
 				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
 				rscore += 1;
-				score[2] = '0' + rscore;
+				
 			}
-
-			ml->layer->posNext = newPos;
+			/*else if (blueRecBound.topLeft.axes[axis] < fence->topLeft.axes[axis]) {
+                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+				newPos.axes[axis] += (2*velocity);
+            }*/
+            ml->layer->posNext = newPos;
+			score[0] = '0' + lscore;
+            score[2] = '0' + rscore;
+			
 
 		} /**< for ml */
 	}
