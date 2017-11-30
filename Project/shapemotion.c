@@ -148,19 +148,26 @@ void mlAdvance(MovLayer *ml, Region *fence)
 	newPos.axes[axis] += (2*velocity);
       }	//< if outside of fence */
             
-			if (shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) {
+			if (shapeBoundary.topLeft.axes[1] < fence->topLeft.axes[1]) {
 				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
-				lscore += 1;
 				
 			} /**< for axis */
 
-			if (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) {
+			if (shapeBoundary.botRight.axes[1] > fence->botRight.axes[1]) {
 				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
-				rscore += 1;
+			}
+			
+			if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
+				lscore += 1;
 				
 			}
+			
+			if (shapeBoundary.botRight.axes[0] > fence->botRight.axes[0]) {
+				rscore += 1;
+			}
+			
 			/*else if (blueRecBound.topLeft.axes[axis] < fence->topLeft.axes[axis]) {
                 int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
