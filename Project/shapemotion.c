@@ -40,7 +40,7 @@ Layer fieldLayer = {		//playing field as a layer
 
 Layer layer2 = {
 		(AbShape *)&rect11,
-		{(screenWidth/10)-10, (screenHeight/2)}, /**< bit below & right of center */
+		{(screenWidth/10)-8, (screenHeight/2)}, /**< bit below & right of center */
 		{0,0}, {0,0},				    /* last & next pos */
 		COLOR_BLUE,
 		&fieldLayer
@@ -132,52 +132,52 @@ void mlAdvance(MovLayer *ml, Region *fence)
 	u_char axis;
 	Region shapeBoundary;
     //Region orangeRecBound;
-    Region blueRecBound;
+    //Region blueRecBound;
     
 	for (; ml; ml = ml->next) {
 		
 		vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
 		abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
-        abShapeGetBounds(ml->layer->next->abShape, &newPos, &blueRecBound); // blue rec
+        //abShapeGetBounds(ml->layer->next->abShape, &newPos, &blueRecBound); // blue rec
         //abShapeGetBounds(ml->layer->next->next->abShape, 0, &orangeRecBound); // orange rec
 
 		for (axis = 0; axis < 2; axis ++) {
-			/*   if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
-	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
-	int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-	newPos.axes[axis] += (2*velocity);
-      }	//< if outside of fence */
-            
-			if (shapeBoundary.topLeft.axes[1] < fence->topLeft.axes[1]) {
-				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-				newPos.axes[axis] += (2*velocity);
-				
-			} /**< for axis */
 
-			if (shapeBoundary.botRight.axes[1] > fence->botRight.axes[1]) {
-				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-				newPos.axes[axis] += (2*velocity);
-			}
-			
-			if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
-				lscore += 1;
-				
+            if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
+				newPos.axes[0] = screenWidth/2;
+                newPos.axes[1] = screenHeight/2;
+                //ml->layer->posNext = newPos;
+                //clearScreen(COLOR_WHITE);
+                layerInit(&layer0);
+                layerDraw(&layer0);
+                lscore += 1;
+                break;
 			}
 			
 			if (shapeBoundary.botRight.axes[0] > fence->botRight.axes[0]) {
-				rscore += 1;
+				newPos.axes[0] = screenWidth/2;
+                newPos.axes[1] = screenHeight/2;
+               // ml->layer->posLast = newPos;
+                //clearScreen(COLOR_WHITE);
+                //layerInit(&layer0);
+                //layerDraw(&layer0);
+                rscore += 1;
+                break;
 			}
 			
-			/*else if (blueRecBound.topLeft.axes[axis] < fence->topLeft.axes[axis]) {
-                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+			else if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) || (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis])) {
+				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 				newPos.axes[axis] += (2*velocity);
-            }*/
-            ml->layer->posNext = newPos;
-			score[0] = '0' + lscore;
-            score[2] = '0' + rscore;
+			} /**< for axis */
 			
-
 		} /**< for ml */
+		ml->layer->posNext = newPos;
+		if ( lscore > 9 || rscore > 9){
+                lscore = 0;
+                rscore = 0;
+        }
+        score[0] = '0' + lscore;
+        score[2] = '0' + rscore;
 	}
 	drawString5x7(55,5, score , COLOR_BLACK, COLOR_WHITE);
 }
@@ -210,7 +210,7 @@ void main()
 
 
 	layerGetBounds(&fieldLayer, &fieldFence);
-	drawString5x7(55,5, "0|0", COLOR_BLACK, COLOR_WHITE); //update to use variables
+	drawString5x7(55,5, score, COLOR_BLACK, COLOR_WHITE); //update to use variables
 
 	enableWDTInterrupts();      /**< enable periodic interrupt */
 	or_sr(0x8);	              /**< GIE (enable interrupts) */
@@ -221,7 +221,6 @@ void main()
 			P1OUT &= ~GREEN_LED;    /**< Green led off witHo CPU */
 			or_sr(0x10);	      /**< CPU OFF */
 		}
-
 		P1OUT |= GREEN_LED;       /**< Green led on when CPU on */
 		redrawScreen = 0;
 		movLayerDraw(&ml0, &layer0);
