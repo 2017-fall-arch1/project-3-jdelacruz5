@@ -16,13 +16,13 @@
 #include "buzzer.h"
 
 #define GREEN_LED BIT6
-
+/*Variables to help keep track of the score*/
 int lscore = 0;
 int rscore = 0;
 char score[3];
 
 
-AbRect rect10 = {abRectGetBounds, abRectCheck, {5,20}}; /**< 10x10 rectangle */
+AbRect rect10 = {abRectGetBounds, abRectCheck, {5,20}}; /**< 5x20 rectangle */
 
 
 AbRectOutline fieldOutline = {	/* playing field */
@@ -38,25 +38,25 @@ Layer fieldLayer = {		//playing field as a layer
 		0
 };
 
-Layer layer2 = {
+Layer layer2 = {          // Layer with a blue paddle
 		(AbShape *)&rect10,
-		{(screenWidth/10)-4, (screenHeight/2)}, /**< bit below & right of center */
+		{(screenWidth/10)-4, (screenHeight/2)}, // far left and centered
 		{0,0}, {0,0},				    /* last & next pos */
 		COLOR_BLUE,
 		&fieldLayer
 };
 
-Layer layer1 = {		//< Layer with a red square
+Layer layer1 = {		// Layer with a orange paddle
 		(AbShape *)&rect10,
-		{screenWidth-10, (screenHeight/2) + 50}, //< center
+		{screenWidth-10, (screenHeight/2) + 50}, // far right and centered
 		{0,0}, {0,0},				    // last & next pos
 		COLOR_ORANGE,
 		&layer2,
 };
 
-Layer layer0 = {		//< Layer with an orange circle 
+Layer layer0 = {		// Layer with a black circle 
 		(AbShape *)&circle4,
-		{(screenWidth/2), (screenHeight/2)}, //< bit below & right of center 
+		{(screenWidth/2), (screenHeight/2)}, // center of screen
 		{0,0}, {0,0},				    //last & next pos 
 		COLOR_BLACK,
 		&layer1,
@@ -71,9 +71,7 @@ typedef struct MovLayer_s {
 	Vec2 velocity;
 	struct MovLayer_s *next;
 } MovLayer;
-
 /* initial value of {0,0} will be overwritten */
-
 // Blue paddle
 MovLayer ml2 = { &layer2, {0,0}, 0 };
 // Orange paddle
@@ -81,12 +79,9 @@ MovLayer ml1 = { &layer1, {0,0}, 0 };
 // Ball
 MovLayer ml0 = { &layer0, {2,2}, 0 };
 
-
-void movLayerDraw(MovLayer *movLayers, Layer *layers)
-{
+void movLayerDraw(MovLayer *movLayers, Layer *layers){
 	int row, col;
 	MovLayer *movLayer;
-
 	and_sr(~8);			/**< disable interrupts (GIE off) */
 	for (movLayer = movLayers; movLayer; movLayer = movLayer->next) { /* for each moving layer */
 		Layer *l = movLayer->layer;
@@ -94,8 +89,6 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers)
 		l->pos = l->posNext;
 	}
 	or_sr(8);			/**< disable interrupts (GIE on) */
-
-
 	for (movLayer = movLayers; movLayer; movLayer = movLayer->next) { /* for each moving layer */
 		Region bounds;
 		layerGetBounds(movLayer->layer, &bounds);
@@ -118,29 +111,25 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers)
 		} // for row
 	} // for moving layer being updated
 }	  
-
-
-
-//Region fence = {{10,30}, {SHORT_EDGE_PIXELS-10, LONG_EDGE_PIXELS-10}}; /**< Create a fence region */
-
 /** Advances a moving shape within a fence
  *  
- *  \param ml The moving shape to be advanced
+ *  \param ml The moving ball to be advanced
  *  \param fence The region which will serve as a boundary for ml
+ *  \param orange The orange paddle to be moved and a boundary
+ *  \param blue The blue paddle to be moved and a boundary
  */
 void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
 {
-
 	score[1] = '|';
 	Vec2 newPos;
 	u_char axis;
 	Region shapeBoundary;
-    
 	for (; ml; ml = ml->next) {
         buzzer_set_period(0);
 		vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
 		abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
 		for (axis = 0; axis < 2; axis ++) {
+            //Checks if the ball hits the top or bottom walls and bounces the ball
             if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) || (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis])) {
 				int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
                 buzzer_set_period(500);
@@ -151,99 +140,90 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
 
                 int velocity = ml->velocity.axes[0] = -ml->velocity.axes[0];
                 velocity = ml->velocity.axes[1] = -ml->velocity.axes[1];
-                //ml->velocity.axes[0] += 1;
+                ml->velocity.axes[0] += 1;
                 newPos.axes[axis] += (2*velocity);
                 buzzer_set_period(1000);
                 int redrawScreen = 1;
             }*/
-
+            //checks if the ball hits the left wall and right player scores
             if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
 				newPos.axes[0] = screenWidth/2;
                 newPos.axes[1] = screenHeight/2;
                 ml->velocity.axes[0] = 2;
                 ml->layer->posNext = newPos;
-                lscore++;
+                rscore++;
                 drawString5x7(3,2, "Player 1", COLOR_GREEN, COLOR_WHITE);
                 buzzer_set_period(1000);
                 int redrawScreen = 1;
                 break;
                 
 			}
-			
+			//checks if the ball hits the right wall and left player scores
 			else if (shapeBoundary.botRight.axes[0] > fence->botRight.axes[0]) {
 				newPos.axes[0] = screenWidth/2;
                 newPos.axes[1] = screenHeight/2;
                 ml->velocity.axes[0] = -2;
                 ml->layer->posNext = newPos;
-                rscore++;
+                lscore++;
                 drawString5x7(80,2, "Player 2", COLOR_GREEN, COLOR_WHITE);
                 buzzer_set_period(1000);
                 int redrawScreen = 1;
                 break;
 			}
-            
-			
-			
-			
 		} /**< for ml */
 		int redrawScreen = 1;
 		ml->layer->posNext = newPos;
-		if ( lscore > 9 || rscore > 9){
-                Vec2 Ovelocity = {screenWidth-10,(screenHeight/2) + 50};
-                Vec2 Bvelocity = {(screenWidth/10)-4 ,(screenHeight/2)};
-            
-                orange->layer->posNext = Ovelocity;
-                blue->layer->posNext = Bvelocity;
-                lscore = 0;
-                rscore = 0;
+		if ( lscore > 5 || rscore > 5){ //After maximum score it resets the game
+            layerDraw(&layer0);
+            lscore = 0;
+            rscore = 0;
         }
-        score[0] = '0' + lscore;
-        score[2] = '0' + rscore;
+        score[0] = '0' + lscore; //updates score
+        score[2] = '0' + rscore; //updates score
 	}
 	int redrawScreen = 1;
-	drawString5x7(55,2, score , COLOR_BLACK, COLOR_WHITE);
-    drawString5x7(3,2, "Player 1", COLOR_RED, COLOR_WHITE);
-    drawString5x7(80,2, "Player 2", COLOR_RED, COLOR_WHITE);
+	drawString5x7(55,2, score , COLOR_BLACK, COLOR_WHITE); // shows the score
+    drawString5x7(3,2, "Player 1", COLOR_RED, COLOR_WHITE); // Player 1 side 
+    drawString5x7(80,2, "Player 2", COLOR_RED, COLOR_WHITE); // Player 2 side
 }
 
 
 u_int bgColor = COLOR_WHITE;     /**< The background color */
 int redrawScreen = 1;           /**< Boolean for whether screen needs to be redrawn */
-
 Region fieldFence;		/**< fence around playing field  */
-
-
-/** Initializes everything, enables interrupts and green LED, 
- *  and handles the rendering for the screen
- */
+/*Moves the orange paddle down*/
 void movLeftDown(Layer *layers){
     Vec2 nextPos;
     Vec2 velocity = {0,5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;
 }
+/*Moves the orange paddle up*/
 void movLeftUp(Layer *layers){
     Vec2 nextPos;
     Vec2 velocity = {0,-5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;  
 }
+/*Moves the blue paddle down*/
 void movRightDown(Layer *layers){
     Vec2 nextPos;
     Vec2 velocity = {0,5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;  
 }
+/*Moves the blue paddle up*/
 void movRightUp(Layer *layers){
     Vec2 nextPos;
     Vec2 velocity = {0,-5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;  
 }
-
+/** Initializes everything, enables interrupts and green LED, 
+ *  and handles the rendering for the screen
+ */
 void main()
 {
-
 	P1DIR |= GREEN_LED;		/**< Green led on when CPU on */		
 	P1OUT |= GREEN_LED;
 
@@ -258,13 +238,11 @@ void main()
 	layerInit(&layer0);
 	layerDraw(&layer0);
 
-
 	layerGetBounds(&fieldLayer, &fieldFence);
 	drawString5x7(55,5, score, COLOR_BLACK, COLOR_WHITE); //update to use variables
 
 	enableWDTInterrupts();      /**< enable periodic interrupt */
 	or_sr(0x8);	              /**< GIE (enable interrupts) */
-
 
 	for(;;) { 
 		while (!redrawScreen) { /**< Pause CPU if screen doesn't need updating */
@@ -289,19 +267,21 @@ void wdt_c_handler()
 	P1OUT |= GREEN_LED;		      /**< Green LED on when cpu on */
 	count ++;
 	if (count == 15) {
-        
 		mlAdvance(&ml0, &ml1, &ml2, &fieldFence);
-        if (p2sw_read() == 1){
-            movLeftDown(&layer2);
-        }
-        else if (p2sw_read() == 2){
-            movLeftUp(&layer2);
-        }
-        else if (p2sw_read() == 3){
-            movRightDown(&layer1);
-        }
-        else if (p2sw_read() == 4){
-            movRightUp(&layer1);
+        switch(p2sw_read()){
+            /*Switch cases to move the corrisponding paddle up or down for button presses*/
+            case 1:
+                movLeftDown(&layer2);
+                break;
+            case 2:
+                movLeftUp(&layer2);
+                break;
+            case 3:
+                movRightDown(&layer1);
+                break;
+            case 4:
+                movRightUp(&layer1);
+                break;
         }
         redrawScreen = 1;
 		count = 0;
