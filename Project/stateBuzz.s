@@ -15,7 +15,6 @@ buzz:	.word one		; case 1
 	.global Bstate
 Bstate:
 	mov r12, &num		; passed state param in r12
-	
 	cmp #4, &num
 	jnc default		
 
@@ -25,7 +24,6 @@ Bstate:
 	mov jt(r12), r0		; jump buzz, 1,2, or 3
 
 	;; switch cases
-	
 one:
 	mov #1000, r12		; param is 200
 	call #buzzer_set_period

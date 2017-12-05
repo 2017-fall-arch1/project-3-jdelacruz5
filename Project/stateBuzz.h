@@ -1,5 +1,5 @@
- #ifndef speakerState_included
-#define speakerState_included
+#ifndef stateBuzz_included
+#define stateBuzz_included
 
 void Bstate(char hit);
 

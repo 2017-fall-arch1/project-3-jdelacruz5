@@ -186,8 +186,6 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Re
             newPos.axes[0] = 5;
             blue->layer->posNext = newPos;
             layerDraw(&layer0);
-            //layerGetBounds(&fieldLayer, &layer0);
-            
             lscore = 0;
             rscore = 0;
         }
@@ -251,7 +249,7 @@ void movLeftDown(Layer *layers){
     Vec2 velocity = {0,5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;
-    layerGetBounds(&layer1, &orange);
+    //layerGetBounds(&layer1, &orange);
     movLayerDraw(&ml1, &layer1);
 }
 /*Moves the orange paddle up*/
@@ -260,7 +258,7 @@ void movLeftUp(Layer *layers){
     Vec2 velocity = {0,-5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos; 
-    layerGetBounds(&layer1, &orange);
+    //layerGetBounds(&layer1, &orange);
     movLayerDraw(&ml1, &layer1);
 }
 /*Moves the blue paddle down*/
@@ -269,7 +267,7 @@ void movRightDown(Layer *layers){
     Vec2 velocity = {0,5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos;  
-    layerGetBounds(&layer2,&blue);
+    //layerGetBounds(&layer2,&blue);
     movLayerDraw(&ml2, &layer2);
 }
 /*Moves the blue paddle up*/
@@ -278,7 +276,7 @@ void movRightUp(Layer *layers){
     Vec2 velocity = {0,-5};
     vec2Add(&nextPos, &layers->posNext, &velocity);
     layers->posNext = nextPos; 
-    layerGetBounds(&layer2,&blue);
+    //layerGetBounds(&layer2,&blue);
     movLayerDraw(&ml2, &layer2);
 }
 /** Watchdog timer interrupt handler. 15 interrupts/sec */
