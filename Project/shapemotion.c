@@ -22,7 +22,7 @@ int rscore = 0;
 char score[3];
 
 
-AbRect rect10 = {abRectGetBounds, abRectCheck, {5,20}}; /**< 5x20 rectangle */
+AbRect rect10 = {abRectGetBounds, abRectCheck, {3,15}}; /**< 5x20 rectangle */
 
 
 AbRectOutline fieldOutline = {	/* playing field */
@@ -40,7 +40,7 @@ Layer fieldLayer = {		//playing field as a layer
 
 Layer layer2 = {          // Layer with a blue paddle
 		(AbShape *)&rect10,
-		{(screenWidth/10)-4, (screenHeight/2)}, // far left and centered
+		{5, (screenHeight/2)}, // far left and centered
 		{0,0}, {0,0},				    /* last & next pos */
 		COLOR_BLUE,
 		&fieldLayer
@@ -48,7 +48,7 @@ Layer layer2 = {          // Layer with a blue paddle
 
 Layer layer1 = {		// Layer with a orange paddle
 		(AbShape *)&rect10,
-		{screenWidth-10, (screenHeight/2) + 50}, // far right and centered
+		{screenWidth-5, (screenHeight/2)}, // far right and centered
 		{0,0}, {0,0},				    // last & next pos
 		COLOR_ORANGE,
 		&layer2,
@@ -75,9 +75,9 @@ typedef struct MovLayer_s {
 // Blue paddle
 MovLayer ml2 = { &layer2, {0,0}, 0 };
 // Orange paddle
-MovLayer ml1 = { &layer1, {0,0}, 0 };
+MovLayer ml1 = { &layer1, {0,0}, &ml2 };
 // Ball
-MovLayer ml0 = { &layer0, {2,2}, 0 };
+MovLayer ml0 = { &layer0, {2,2}, &ml1 };
 
 void movLayerDraw(MovLayer *movLayers, Layer *layers){
 	int row, col;
@@ -115,11 +115,12 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers){
  *  
  *  \param ml The moving ball to be advanced
  *  \param fence The region which will serve as a boundary for ml
- *  \param orange The orange paddle to be moved and a boundary
- *  \param blue The blue paddle to be moved and a boundary
+ *  \param orange The orange paddle to be moved
+ *  \param blue The blue paddle to be moved
+ *  \param orangeBound The boundary of the orange paddle
+ *  \param blueBound The boundary of the blue paddle
  */
-void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
-{
+void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Region *orangeBound, Region *blueBound){
 	score[1] = '|';
 	Vec2 newPos;
 	u_char axis;
@@ -135,17 +136,19 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
                 buzzer_set_period(500);
 				newPos.axes[axis] += (2*velocity);
 			} /**< for axis */
-			// fix collisions
-			/*if((ml->layer->posNext.axes[0] == orange->layer->posNext.axes[0] + 10 )) {
-
-                int velocity = ml->velocity.axes[0] = -ml->velocity.axes[0];
-                velocity = ml->velocity.axes[1] = -ml->velocity.axes[1];
-                ml->velocity.axes[0] += 1;
+			//Attempts at paddle bounderies
+			if ((shapeBoundary.topLeft.axes[0] < (orangeBound->botRight.axes[0])) &&                (shapeBoundary.botRight.axes[1] > (orangeBound->topLeft.axes[1])) && 
+                (shapeBoundary.topLeft.axes[1] < (orangeBound->botRight.axes[1]))) {
+                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
                 newPos.axes[axis] += (2*velocity);
-                buzzer_set_period(1000);
-                int redrawScreen = 1;
-            }*/
-            //checks if the ball hits the left wall and right player scores
+                break;
+            }
+            //Attempts at paddle bounderis
+            if ((shapeBoundary.botRight.axes[0] > blueBound->topLeft.axes[0]) &&               (shapeBoundary.botRight.axes[1] > blueBound->topLeft.axes[1]) &&               (shapeBoundary.topLeft.axes[1] < blueBound->botRight.axes[1])) {
+                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+                newPos.axes[axis] += (2*velocity);
+                break;
+            }
             if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
 				newPos.axes[0] = screenWidth/2;
                 newPos.axes[1] = screenHeight/2;
@@ -156,7 +159,6 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
                 buzzer_set_period(1000);
                 int redrawScreen = 1;
                 break;
-                
 			}
 			//checks if the ball hits the right wall and left player scores
 			else if (shapeBoundary.botRight.axes[0] > fence->botRight.axes[0]) {
@@ -173,8 +175,10 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
 		} /**< for ml */
 		int redrawScreen = 1;
 		ml->layer->posNext = newPos;
-		if ( lscore > 5 || rscore > 5){ //After maximum score it resets the game
-            layerDraw(&layer0);
+		if ( lscore > 1 || rscore > 1 ){ //After maximum score it resets the game
+            //layerDraw(&layer0);
+            layerGetBounds(&fieldLayer, &layer0);
+            
             lscore = 0;
             rscore = 0;
         }
@@ -191,34 +195,8 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence)
 u_int bgColor = COLOR_WHITE;     /**< The background color */
 int redrawScreen = 1;           /**< Boolean for whether screen needs to be redrawn */
 Region fieldFence;		/**< fence around playing field  */
-/*Moves the orange paddle down*/
-void movLeftDown(Layer *layers){
-    Vec2 nextPos;
-    Vec2 velocity = {0,5};
-    vec2Add(&nextPos, &layers->posNext, &velocity);
-    layers->posNext = nextPos;
-}
-/*Moves the orange paddle up*/
-void movLeftUp(Layer *layers){
-    Vec2 nextPos;
-    Vec2 velocity = {0,-5};
-    vec2Add(&nextPos, &layers->posNext, &velocity);
-    layers->posNext = nextPos;  
-}
-/*Moves the blue paddle down*/
-void movRightDown(Layer *layers){
-    Vec2 nextPos;
-    Vec2 velocity = {0,5};
-    vec2Add(&nextPos, &layers->posNext, &velocity);
-    layers->posNext = nextPos;  
-}
-/*Moves the blue paddle up*/
-void movRightUp(Layer *layers){
-    Vec2 nextPos;
-    Vec2 velocity = {0,-5};
-    vec2Add(&nextPos, &layers->posNext, &velocity);
-    layers->posNext = nextPos;  
-}
+Region orange; //fence for orange paddle
+Region blue; // fence for blue paddle
 /** Initializes everything, enables interrupts and green LED, 
  *  and handles the rendering for the screen
  */
@@ -239,6 +217,8 @@ void main()
 	layerDraw(&layer0);
 
 	layerGetBounds(&fieldLayer, &fieldFence);
+    layerGetBounds(&layer1,&orange);
+    layerGetBounds(&layer2,&blue);
 	drawString5x7(55,5, score, COLOR_BLACK, COLOR_WHITE); //update to use variables
 
 	enableWDTInterrupts();      /**< enable periodic interrupt */
@@ -257,9 +237,38 @@ void main()
         movLayerDraw(&ml2, &layer0);
 	}
 }
-
-
-
+/*Moves the orange paddle down*/
+void movLeftDown(Layer *layers){
+    Vec2 nextPos;
+    Vec2 velocity = {0,5};
+    vec2Add(&nextPos, &layers->posNext, &velocity);
+    layers->posNext = nextPos;
+    layerGetBounds(&layer1, &orange);
+}
+/*Moves the orange paddle up*/
+void movLeftUp(Layer *layers){
+    Vec2 nextPos;
+    Vec2 velocity = {0,-5};
+    vec2Add(&nextPos, &layers->posNext, &velocity);
+    layers->posNext = nextPos; 
+    layerGetBounds(&layer1, &orange);
+}
+/*Moves the blue paddle down*/
+void movRightDown(Layer *layers){
+    Vec2 nextPos;
+    Vec2 velocity = {0,5};
+    vec2Add(&nextPos, &layers->posNext, &velocity);
+    layers->posNext = nextPos;  
+    layerGetBounds(&layer2,&blue);
+}
+/*Moves the blue paddle up*/
+void movRightUp(Layer *layers){
+    Vec2 nextPos;
+    Vec2 velocity = {0,-5};
+    vec2Add(&nextPos, &layers->posNext, &velocity);
+    layers->posNext = nextPos; 
+    layerGetBounds(&layer2,&blue);
+}
 /** Watchdog timer interrupt handler. 15 interrupts/sec */
 void wdt_c_handler()
 {
@@ -267,7 +276,7 @@ void wdt_c_handler()
 	P1OUT |= GREEN_LED;		      /**< Green LED on when cpu on */
 	count ++;
 	if (count == 15) {
-		mlAdvance(&ml0, &ml1, &ml2, &fieldFence);
+		mlAdvance(&ml0, &ml1, &ml2, &fieldFence, &orange, &blue);
         switch(p2sw_read()){
             /*Switch cases to move the corrisponding paddle up or down for button presses*/
             case 1:
@@ -286,6 +295,5 @@ void wdt_c_handler()
         redrawScreen = 1;
 		count = 0;
 	} 
-	
 	P1OUT &= ~GREEN_LED;		    /**< Green LED off when cpu off */
 }
