@@ -178,8 +178,15 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Re
 		int redrawScreen = 1;
 		ml->layer->posNext = newPos;
 		if ( lscore > 1 || rscore > 1 ){ //After maximum score it resets the game
-            //layerDraw(&layer0);
-            layerGetBounds(&fieldLayer, &layer0);
+            newPos.axes[0] = screenWidth/2;
+            newPos.axes[1] = screenHeight/2;
+            ml->layer->posNext = newPos;
+            newPos.axes[0] = screenWidth-5;
+            orange->layer->posNext = newPos;
+            newPos.axes[0] = 5;
+            blue->layer->posNext = newPos;
+            layerDraw(&layer0);
+            //layerGetBounds(&fieldLayer, &layer0);
             
             lscore = 0;
             rscore = 0;
@@ -219,8 +226,7 @@ void main()
 	layerDraw(&layer0);
 
 	layerGetBounds(&fieldLayer, &fieldFence);
-    layerGetBounds(&layer1,&orange);
-    layerGetBounds(&layer2,&blue);
+
 	drawString5x7(55,5, score, COLOR_BLACK, COLOR_WHITE); //update to use variables
 
 	enableWDTInterrupts();      /**< enable periodic interrupt */
@@ -282,6 +288,8 @@ void wdt_c_handler()
 	P1OUT |= GREEN_LED;		      /**< Green LED on when cpu on */
 	count ++;
 	if (count == 15) {
+        layerGetBounds(&layer1,&orange);
+        layerGetBounds(&layer2,&blue);
 		mlAdvance(&ml0, &ml1, &ml2, &fieldFence, &orange, &blue);
         redrawScreen = 1;
         u_int buttons = p2sw_read();
