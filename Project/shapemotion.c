@@ -124,6 +124,11 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Re
 	Vec2 newPos;
 	u_char axis;
 	Region shapeBoundary;
+    Region bounceBall;
+    bounceBall.topLeft.axes[0] = fence->topLeft.axes[0] + 5;
+    bounceBall.topLeft.axes[1] = fence->topLeft.axes[1];
+    bounceBall.botRight.axes[0] = fence->botRight.axes[0] - 5;
+    bounceBall.botRight.axes[1] = fence->botRight.axes[1];
 	for (; ml; ml = ml->next) {
         buzzer_set_period(0);
 		vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
@@ -135,21 +140,22 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Re
 				newPos.axes[axis] += (2*velocity);
                 Bstate(3);
 			} /**< for axis */
-			//Attempts at paddle bounderies
-			if ((shapeBoundary.topLeft.axes[0] < (orangeBound->botRight.axes[0])) &&                (shapeBoundary.botRight.axes[1] > (orangeBound->topLeft.axes[1])) && 
-                (shapeBoundary.topLeft.axes[1] < (orangeBound->botRight.axes[1]))) {
-                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-                newPos.axes[axis] += (2*velocity);
-                Bstate(2);
-                break;
-            }
-            //Attempts at paddle bounderis
-            if ((shapeBoundary.botRight.axes[0] > blueBound->topLeft.axes[0]) &&               (shapeBoundary.botRight.axes[1] > blueBound->topLeft.axes[1]) &&               (shapeBoundary.topLeft.axes[1] < blueBound->botRight.axes[1])) {
-                int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-                newPos.axes[axis] += (2*velocity);
-                Bstate(2);
-                break;
-            }
+			//Handles right paddle bouncing
+			if((shapeBoundary.topLeft.axes[axis] < bounceBall.topLeft.axes[axis]) || (shapeBoundary.botRight.axes[axis] > bounceBall.botRight.axes[axis])){
+                if (shapeBoundary.topLeft.axes[1] > orangeBound->topLeft.axes[1] && shapeBoundary.botRight.axes[1] < orangeBound->botRight.axes[1] && shapeBoundary.topLeft.axes[0] > (screenWidth/2)){
+                    int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+                    newPos.axes[axis] += (2*velocity);
+                    Bstate(2);
+                    break;
+            }}
+            //Handles left paddle bouncing
+            if((shapeBoundary.topLeft.axes[axis] < bounceBall.topLeft.axes[axis]) || (shapeBoundary.botRight.axes[axis] > bounceBall.botRight.axes[axis])){
+                if (shapeBoundary.topLeft.axes[1] > blueBound->topLeft.axes[1] && shapeBoundary.botRight.axes[1] < blueBound->botRight.axes[1] && shapeBoundary.topLeft.axes[0] < (screenWidth/2)){ // 0 0
+                    int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+                    newPos.axes[axis] += (2*velocity);
+                    Bstate(2);
+                    break;
+            }}
             //checks if the ball hits the left wall and right player scores
             if (shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0]) {
 				newPos.axes[0] = screenWidth/2;
@@ -177,7 +183,7 @@ void mlAdvance(MovLayer *ml, MovLayer *orange, MovLayer *blue, Region *fence, Re
 		} /**< for ml */
 		int redrawScreen = 1;
 		ml->layer->posNext = newPos;
-		if ( lscore > 1 || rscore > 1 ){ //After maximum score it resets the game
+		if ( lscore > 4 || rscore > 4 ){ //After maximum score it resets the game
             newPos.axes[0] = screenWidth/2;
             newPos.axes[1] = screenHeight/2;
             ml->layer->posNext = newPos;
